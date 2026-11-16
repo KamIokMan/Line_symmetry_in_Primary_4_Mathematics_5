@@ -1,0 +1,1552 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>幾何博物館：生活展品對稱分類大作戰（小四數學互動課件）</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Noto Sans TC -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <style>
+    * {
+      user-select: none;
+      -webkit-user-select: none;
+      box-sizing: border-box;
+      font-family: 'Noto Sans TC', sans-serif;
+    }
+
+    body {
+      background-color: #FDFBF5;
+      color: #262626;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* 16:9 Widescreen Responsive Stage */
+    #app-stage {
+      width: 100vw;
+      height: 100vh;
+      max-width: 177.78vh;
+      max-height: 56.25vw;
+      aspect-ratio: 16 / 9;
+      background-color: #FFFDF7;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: clamp(8px, 1.1vw, 18px) clamp(12px, 1.5vw, 24px);
+      gap: clamp(8px, 1vw, 14px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    @media (max-aspect-ratio: 4/3) {
+      #app-stage {
+        max-width: 100vw;
+        max-height: 100vh;
+        aspect-ratio: auto;
+      }
+    }
+
+    /* Exhibit Card Styling matching screenshot */
+    .item-card {
+      background: #FFFFFF;
+      border-radius: 16px;
+      border: 2px solid #E5E7EB;
+      box-shadow: 0 5px 0 #E2E8F0, 0 6px 12px rgba(0, 0, 0, 0.05);
+      transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.18s ease, border-color 0.18s ease;
+      cursor: grab;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 6px 8px 8px 8px;
+      touch-action: none;
+    }
+
+    .item-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 0 #CBD5E1, 0 10px 18px rgba(0, 0, 0, 0.08);
+    }
+
+    .item-card:active {
+      cursor: grabbing;
+    }
+
+    .item-card.selected {
+      border-color: #2563EB;
+      background-color: #F8FAFC;
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3), 0 7px 0 #93C5FD;
+    }
+
+    /* Fold Button Pill */
+    .fold-pill {
+      background: linear-gradient(180deg, #FDE68A 0%, #FCD34D 100%);
+      border: 1.5px solid #F59E0B;
+      color: #78350F;
+      border-radius: 10px;
+      padding: 2px 8px;
+      font-size: clamp(10px, 0.8vw, 13px);
+      font-weight: 900;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      box-shadow: 0 2px 0 rgba(217, 119, 6, 0.35);
+      transition: transform 0.12s ease, filter 0.12s ease;
+      cursor: pointer;
+    }
+
+    .fold-pill:hover {
+      transform: scale(1.06);
+      filter: brightness(1.03);
+    }
+
+    /* Bottom Label Pill on Card */
+    .card-label-pill {
+      background-color: #F1F5F9;
+      border-radius: 999px;
+      padding: 3px 6px;
+      text-align: center;
+      font-weight: 900;
+      color: #1E293B;
+      font-size: clamp(11px, 0.92vw, 15px);
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Empty Dashed Slot inside Cabinets */
+    .empty-slot {
+      border: 2px dashed rgba(148, 163, 184, 0.45);
+      background-color: rgba(255, 255, 255, 0.45);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(100, 116, 139, 0.45);
+      font-size: 12px;
+      font-weight: 700;
+      transition: all 0.2s ease;
+    }
+
+    /* Dropzone Active Highlight */
+    .cabinet-dropzone.drag-over {
+      transform: scale(1.008);
+      box-shadow: 0 0 0 4px #3B82F6, 0 12px 24px rgba(59, 130, 246, 0.15);
+    }
+
+    /* Error Shake & Success Pop Animations */
+    @keyframes shakeError {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-9px) rotate(-1.5deg); }
+      40% { transform: translateX(9px) rotate(1.5deg); }
+      60% { transform: translateX(-6px) rotate(-1deg); }
+      80% { transform: translateX(6px) rotate(1deg); }
+    }
+    .shake-anim {
+      animation: shakeError 0.42s ease-in-out;
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.84); opacity: 0.7; }
+      60% { transform: scale(1.05); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .pop-anim {
+      animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* Symmetry Axis Lines */
+    .axis-v-line {
+      position: absolute;
+      top: 4%;
+      bottom: 4%;
+      left: 50%;
+      width: 0;
+      border-left: 3px dashed #EF4444;
+      transform: translateX(-50%);
+      pointer-events: none;
+      z-index: 15;
+    }
+
+    .axis-h-line {
+      position: absolute;
+      left: 4%;
+      right: 4%;
+      top: 50%;
+      height: 0;
+      border-top: 3px dashed #10B981;
+      transform: translateY(-50%);
+      pointer-events: none;
+      z-index: 15;
+    }
+
+    /* 3D Folding Stage inside Inspector Modal */
+    .fold-3d-viewport {
+      perspective: 1000px;
+      position: relative;
+      width: 260px;
+      height: 210px;
+    }
+
+    .fold-layer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      backface-visibility: visible;
+    }
+
+    .clip-left-half { clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%); }
+    .clip-right-half {
+      clip-path: polygon(50% 0, 100% 0, 100% 100%, 50% 100%);
+      transform-origin: 50% 50%;
+    }
+    .clip-top-half { clip-path: polygon(0 0, 100% 0, 100% 50%, 0 50%); }
+    .clip-bottom-half {
+      clip-path: polygon(0 50%, 100% 50%, 100% 100%, 0 100%);
+      transform-origin: 50% 50%;
+    }
+
+    /* Graded Card Status Styles */
+    .item-card.graded-correct {
+      border-color: #10B981;
+      background-color: #F0FDF4;
+      box-shadow: 0 4px 0 #6EE7B7;
+    }
+
+    .item-card.graded-wrong {
+      border-color: #EF4444;
+      background-color: #FEF2F2;
+      box-shadow: 0 4px 0 #FCA5A5;
+    }
+
+    .score-badge-pill {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      z-index: 25;
+      font-size: 10px;
+      font-weight: 900;
+      padding: 1.5px 6px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    }
+
+    @keyframes pulseSubmit {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.45); }
+      50% { transform: scale(1.04); box-shadow: 0 0 0 6px rgba(37, 99, 235, 0); }
+    }
+    .pulse-submit-btn {
+      animation: pulseSubmit 1.6s infinite;
+    }
+
+    /* Subtle grid background on stage */
+    #app-stage {
+      background-image:
+        linear-gradient(to right, rgba(226, 232, 240, 0.4) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(226, 232, 240, 0.4) 1px, transparent 1px);
+      background-size: 28px 28px;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="app-stage">
+
+    <!-- ==================== 1. TOP BANNER (ALLOW WRONG PLACEMENTS + FINAL SUBMIT GRADING) ==================== -->
+    <header id="top-banner" class="w-full bg-gradient-to-r from-[#FFF6D6] via-[#FFFBEB] to-[#EFF6FF] border-2 border-[#F5C451] rounded-2xl px-3.5 py-2 flex items-center justify-between gap-2.5 shadow-sm shrink-0">
+      <!-- Left: Owl Icon + Title & Prompt Text -->
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div id="banner-avatar" class="w-10 h-10 rounded-xl bg-[#F5B027] flex items-center justify-center text-2xl shadow-inner shrink-0">
+          🦉
+        </div>
+
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="bg-[#F59E0B] text-white text-[11px] font-black px-2 py-0.5 rounded-md shrink-0">【重溫活動】</span>
+            <h1 class="text-xs sm:text-sm md:text-base font-black text-slate-800 truncate">生活展品對稱分類大挑戰！</h1>
+          </div>
+          <p id="banner-message" class="text-xs sm:text-sm font-bold text-slate-700 leading-snug truncate mt-0.5">
+            請將下方 10 張展品卡自由拖曳或點選放入展櫃，完成後按「<span class="text-blue-700 font-black">📝 呈交並核對答案</span>」計分（每張 <span class="text-emerald-700 font-black">10 分</span>，滿分 <span class="text-emerald-700 font-black">100 分</span>）！
+          </p>
+        </div>
+      </div>
+
+      <!-- Right: Scoreboard + Submit Button + Teacher Controls -->
+      <div class="flex items-center gap-2 shrink-0">
+        <!-- Legend Pill matching reference screenshot -->
+        <div class="hidden 2xl:flex items-center gap-2 bg-white/90 border border-slate-200 rounded-full px-2.5 py-1 text-xs font-black text-slate-700 shadow-sm">
+          <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span>垂直對稱軸</span>
+          <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>水平對稱軸</span>
+        </div>
+
+        <!-- Score Badge (Shows ? / 100 before submission, actual score after submission) -->
+        <div id="live-score-box" class="bg-white border-2 border-amber-400 rounded-xl px-3 py-1 flex items-center gap-1.5 shadow-sm transition-all">
+          <span class="text-base">🏆</span>
+          <span id="score-title-label" class="text-xs sm:text-sm font-black text-slate-700">得分：</span>
+          <span id="live-score-num" class="text-base sm:text-lg font-black text-amber-600">待批改</span>
+          <span class="text-xs font-black text-slate-400">/ 100 分</span>
+        </div>
+
+        <!-- Submit & Check Answers Button -->
+        <button id="btn-submit-check" onclick="submitAndGrade()" class="bg-[#2563EB] hover:bg-[#1D4ED8] text-white border-2 border-[#1E40AF] rounded-xl px-3 py-1.5 text-xs sm:text-sm font-black flex items-center gap-1.5 shadow-sm transition active:translate-y-0.5">
+          <i class="fa-solid fa-clipboard-check"></i>
+          <span id="btn-submit-label">呈交並核對答案</span>
+        </button>
+
+        <!-- Retry Wrong Cards Button (Shown after grading if there are mistakes) -->
+        <button id="btn-retry-wrong" onclick="retryWrongCards()" class="hidden bg-[#FEF3C7] hover:bg-[#FDE68A] text-[#B45309] border-2 border-[#F59E0B] rounded-xl px-2.5 py-1.5 text-xs font-black items-center gap-1 shadow-sm transition active:translate-y-0.5">
+          <i class="fa-solid fa-pen-to-square"></i>
+          <span>訂正錯題</span>
+        </button>
+
+        <!-- Show/Hide Symmetry Axis Lines Button -->
+        <button id="btn-axis-toggle" onclick="toggleSymmetryLines()" class="bg-white hover:bg-amber-50 text-slate-700 border-2 border-amber-300 rounded-xl px-2.5 py-1.5 text-xs font-black flex items-center gap-1 shadow-sm transition active:translate-y-0.5" title="顯示或隱藏對稱軸">
+          <i class="fa-solid fa-grip-lines-vertical text-rose-500"></i>
+          <span id="axis-toggle-label" class="hidden lg:inline">顯示對稱軸</span>
+        </button>
+
+        <!-- One-Click Complete Answer -->
+        <button onclick="autoCompleteAll()" class="bg-[#ECFDF5] hover:bg-[#D1FAE5] text-[#047857] border-2 border-[#6EE7B7] rounded-xl px-2.5 py-1.5 text-xs font-black flex items-center gap-1 shadow-sm transition active:translate-y-0.5" title="顯示正確分類位置">
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+          <span class="hidden md:inline">顯示正確答案</span>
+        </button>
+
+        <!-- Reset & Shuffle Button -->
+        <button onclick="resetToWaitingTray()" class="bg-[#FFE4E6] hover:bg-[#FECDD3] text-[#BE123C] border-2 border-[#FDA4AF] rounded-xl px-2.5 py-1.5 text-xs font-black flex items-center gap-1 shadow-sm transition active:translate-y-0.5" title="重新開始並隨機洗牌">
+          <i class="fa-solid fa-rotate-right"></i>
+          <span>重新開始</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ==================== 2. MIDDLE SECTION: TWO DISPLAY CABINETS ==================== -->
+    <main class="flex-1 grid grid-cols-2 gap-4 min-h-0">
+
+      <!-- LEFT CABINET: 軸對稱圖形展櫃 -->
+      <section id="cabinet-sym"
+               onclick="handleCabinetTap('sym')"
+               ondragover="handleCabinetDragOver(event, 'sym')"
+               ondragleave="handleCabinetDragLeave(event, 'sym')"
+               ondrop="handleCabinetDrop(event, 'sym')"
+               class="cabinet-dropzone bg-[#E6F7F1] border-[3.5px] border-[#6EE7B7] rounded-[24px] flex flex-col overflow-hidden shadow-sm cursor-pointer transition-all">
+        <!-- Mint Green Header -->
+        <div class="bg-[#38B68C] text-white px-5 py-2.5 flex items-center justify-between shrink-0">
+          <div class="flex items-center gap-2.5">
+            <i class="fa-solid fa-circle-check text-xl md:text-2xl"></i>
+            <div>
+              <h2 class="text-base md:text-lg lg:text-xl font-black tracking-wide">軸對稱圖形展櫃</h2>
+              <p class="text-[11px] md:text-xs text-emerald-50 font-bold">沿著一條直線對折，兩邊能「完全重合」！</p>
+            </div>
+          </div>
+          <div id="counter-sym" class="bg-white text-slate-800 font-black text-xs md:text-sm px-3.5 py-1 rounded-full shadow-sm">
+            已放入：0 件
+          </div>
+        </div>
+
+        <!-- Neutral Flexible Grid (No fixed slot count revealed) -->
+        <div id="grid-sym" class="flex-1 p-2.5 grid grid-cols-5 grid-rows-2 gap-2 min-h-0 relative">
+          <!-- Populated dynamically by JS -->
+        </div>
+      </section>
+
+      <!-- RIGHT CABINET: 非軸對稱圖形（剔除區） -->
+      <section id="cabinet-asym"
+               onclick="handleCabinetTap('asym')"
+               ondragover="handleCabinetDragOver(event, 'asym')"
+               ondragleave="handleCabinetDragLeave(event, 'asym')"
+               ondrop="handleCabinetDrop(event, 'asym')"
+               class="cabinet-dropzone bg-[#FDECEF] border-[3.5px] border-[#FDA4AF] rounded-[24px] flex flex-col overflow-hidden shadow-sm cursor-pointer transition-all">
+        <!-- Coral Pink Header -->
+        <div class="bg-[#F26B7A] text-white px-5 py-2.5 flex items-center justify-between shrink-0">
+          <div class="flex items-center gap-2.5">
+            <i class="fa-solid fa-ban text-xl md:text-2xl"></i>
+            <div>
+              <h2 class="text-base md:text-lg lg:text-xl font-black tracking-wide">非軸對稱圖形（剔除區）</h2>
+              <p class="text-[11px] md:text-xs text-rose-50 font-bold">無論怎麼對折，兩邊都無法完全重合（小心偽裝陷阱！）</p>
+            </div>
+          </div>
+          <div id="counter-asym" class="bg-white text-slate-800 font-black text-xs md:text-sm px-3.5 py-1 rounded-full shadow-sm">
+            已放入：0 件
+          </div>
+        </div>
+
+        <!-- Neutral Flexible Grid (No fixed slot count revealed) -->
+        <div id="grid-asym" class="flex-1 p-2.5 grid grid-cols-5 grid-rows-2 gap-2 min-h-0 relative">
+          <!-- Populated dynamically by JS -->
+        </div>
+      </section>
+
+    </main>
+
+    <!-- ==================== 3. BOTTOM SECTION: WAITING TRAY (10 ITEMS, NO BICYCLE & NO FLAG) ==================== -->
+    <section id="waiting-tray-section"
+             onclick="handleTrayTap()"
+             ondragover="handleTrayDragOver(event)"
+             ondrop="handleTrayDrop(event)"
+             class="h-[34%] min-h-[148px] bg-[#FFF8E7] border-[3px] border-[#F6D28B] rounded-[24px] px-4 py-2.5 flex flex-col justify-between shrink-0 shadow-inner">
+      <!-- Waiting Tray Header -->
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-2.5">
+          <span id="tray-badge" class="bg-[#F59E0B] text-white text-xs font-black px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
+            <i class="fa-solid fa-box-open"></i>
+            <span id="tray-count-text">待分類生活展品區 (共 10 件)</span>
+          </span>
+          <span class="text-xs md:text-sm font-bold text-slate-600">
+            可自由把展品放入任一展櫃或更換位置，全部放好後按「<strong class="text-blue-700">呈交並核對答案</strong>」觀看得分與錯題！
+          </span>
+        </div>
+        <span id="selection-tip" class="text-xs font-black text-sky-600 hidden sm:inline">
+          <i class="fa-solid fa-hand-pointer mr-1"></i>提示：點選展櫃內的卡片也可移去另一展櫃或放回此區！
+        </span>
+      </div>
+
+      <!-- 10-Card Grid (10 columns on widescreen, 5x2 on smaller screens) -->
+      <div id="waiting-tray-grid" class="flex-1 grid grid-cols-5 lg:grid-cols-10 gap-2.5 pt-2 items-stretch min-h-0">
+        <!-- Populated dynamically by JS -->
+      </div>
+    </section>
+
+    <!-- ==================== MODAL: INTERACTIVE 3D FOLDING VERIFICATION LAB ==================== -->
+    <div id="fold-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+      <div class="bg-white border-4 border-[#F59E0B] rounded-3xl max-w-3xl w-full p-5 shadow-2xl">
+        <div class="flex items-center justify-between border-b-2 border-slate-100 pb-3 mb-4">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-amber-100 text-amber-600 border-2 border-amber-300 flex items-center justify-center text-lg font-black">
+              <i class="fa-solid fa-magnifying-glass"></i>
+            </div>
+            <div>
+              <span class="text-[11px] font-black text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
+                3D 對折驗證實驗室
+              </span>
+              <h3 id="modal-title" class="text-xl font-black text-slate-800 mt-0.5">展品名稱</h3>
+            </div>
+          </div>
+          <button onclick="closeFoldModal()" class="w-9 h-9 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-600 font-black flex items-center justify-center text-lg transition">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <!-- Modal Content -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
+          <!-- Left: 3D Folding Viewport + Interactive Slider -->
+          <div class="md:col-span-6 bg-slate-50 border-2 border-dashed border-slate-300 rounded-2xl p-4 flex flex-col items-center">
+            <div class="text-xs font-bold text-slate-500 mb-1">
+              <i class="fa-solid fa-cube mr-1 text-amber-500"></i>選擇對折方向或拉動滑桿觀察兩邊是否重合
+            </div>
+
+            <!-- 3D Viewport -->
+            <div id="fold-3d-stage" class="fold-3d-viewport my-1 flex items-center justify-center">
+              <!-- Populated by JS -->
+            </div>
+
+            <!-- Manual Fold Angle Slider -->
+            <div class="w-full px-2 mt-2">
+              <div class="flex justify-between items-center text-[11px] font-black text-slate-500 mb-1">
+                <span>攤開 (0°)</span>
+                <div class="flex items-center gap-1.5">
+                  <button onclick="stepFoldAngle(-1)" class="px-2 py-0.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded text-[11px] font-black transition">-1°</button>
+                  <span id="fold-angle-label" class="text-amber-600 min-w-[85px] text-center">對折角度：0°</span>
+                  <button onclick="stepFoldAngle(1)" class="px-2 py-0.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded text-[11px] font-black transition">+1°</button>
+                </div>
+                <span>完全對折 (180°)</span>
+              </div>
+              <input id="fold-slider" type="range" min="0" max="180" value="0"
+                     oninput="handleSliderFold(this.value)"
+                     class="w-full accent-amber-500 cursor-pointer h-2 bg-slate-200 rounded-lg" />
+              <div class="flex justify-between text-[10px] font-bold text-slate-400 mt-0.5 px-0.5">
+                <span class="cursor-pointer hover:text-amber-600" onclick="handleSliderFold(0)">0° (攤開)</span>
+                <span class="cursor-pointer hover:text-amber-600" onclick="handleSliderFold(45)">45°</span>
+                <span class="cursor-pointer hover:text-amber-600" onclick="handleSliderFold(90)">90° (立起)</span>
+                <span class="cursor-pointer hover:text-amber-600" onclick="handleSliderFold(135)">135°</span>
+                <span class="cursor-pointer hover:text-amber-600" onclick="handleSliderFold(180)">180° (完全對折)</span>
+              </div>
+            </div>
+
+            <!-- Quick Fold Buttons -->
+            <div class="flex items-center gap-1.5 w-full mt-3">
+              <button onclick="startAutoFold('vertical')" class="flex-1 bg-[#EF4444] hover:bg-[#DC2626] text-white font-black text-xs py-2 px-2 rounded-xl flex items-center justify-center gap-1 shadow-sm transition">
+                <span class="w-2 h-2 rounded-full bg-white inline-block shrink-0"></span>
+                <span>垂直軸(左右對折)</span>
+              </button>
+              <button onclick="startAutoFold('horizontal')" class="flex-1 bg-[#10B981] hover:bg-[#059669] text-white font-black text-xs py-2 px-2 rounded-xl flex items-center justify-center gap-1 shadow-sm transition">
+                <span class="w-2 h-2 rounded-full bg-white inline-block shrink-0"></span>
+                <span>水平軸(上下對折)</span>
+              </button>
+              <button onclick="startAutoFold('diagonal')" class="flex-1 bg-[#8B5CF6] hover:bg-[#7C3AED] text-white font-black text-xs py-2 px-2 rounded-xl flex items-center justify-center gap-1 shadow-sm transition">
+                <i class="fa-solid fa-slash"></i>
+                <span>45° 斜線</span>
+              </button>
+              <button onclick="resetFoldView()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-black text-xs py-2 px-2.5 rounded-xl transition">
+                攤開
+              </button>
+            </div>
+          </div>
+
+          <!-- Right: Verification Result & Quick Sort Buttons -->
+          <div class="md:col-span-6 flex flex-col justify-between space-y-3">
+            <div id="modal-result-box" class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-3.5">
+              <div id="modal-result-title" class="font-black text-amber-800 text-sm mb-1">
+                💡 點擊「垂直軸(左右對折)」或「水平軸(上下對折)」測試看看！
+              </div>
+              <p id="modal-result-desc" class="text-xs sm:text-sm text-slate-700 font-bold leading-relaxed">
+                如果沿著直線對折 180° 後，兩邊的圖案能夠<strong>完全重合</strong>，它就是軸對稱圖形！
+              </p>
+            </div>
+
+            <div class="bg-sky-50 border-2 border-sky-200 rounded-2xl p-3.5">
+              <div class="flex items-center justify-between mb-1">
+                <div class="text-xs font-black text-sky-700">
+                  <i class="fa-solid fa-graduation-cap mr-1"></i>小博士重溫解析
+                </div>
+                <button id="btn-toggle-note" onclick="toggleModalTeacherNote()" class="text-[11px] font-black bg-sky-100 hover:bg-sky-200 text-sky-800 px-2 py-0.5 rounded-lg transition">
+                  顯示解析
+                </button>
+              </div>
+              <p id="modal-teacher-note" class="text-xs sm:text-sm text-slate-700 font-bold leading-relaxed"></p>
+            </div>
+
+            <!-- Direct Classify Buttons inside Modal -->
+            <div class="pt-1">
+              <div class="text-xs font-black text-slate-500 mb-1.5">觀察完畢了嗎？選擇要放入哪個展櫃：</div>
+              <div class="grid grid-cols-2 gap-2.5">
+                <button onclick="classifyFromModal('sym')" class="bg-[#38B68C] hover:bg-[#2F9E79] text-white font-black text-xs sm:text-sm py-2.5 px-3 rounded-xl shadow-sm flex items-center justify-center gap-1.5 transition">
+                  <i class="fa-solid fa-check-circle"></i>
+                  <span>放入「軸對稱展櫃」</span>
+                </button>
+                <button onclick="classifyFromModal('asym')" class="bg-[#F26B7A] hover:bg-[#E05363] text-white font-black text-xs sm:text-sm py-2.5 px-3 rounded-xl shadow-sm flex items-center justify-center gap-1.5 transition">
+                  <i class="fa-solid fa-ban"></i>
+                  <span>放入「非軸對稱區」</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ==================== JAVASCRIPT: 10 ITEMS DATA & INTERACTIVE LOGIC ==================== -->
+  <script>
+    /**
+     * Exact 10 items matching the user's screenshot (Strictly NO bicycle and NO flag)
+     * 6 Symmetric items + 4 Asymmetric items
+     */
+    const EXHIBITS = [
+      // ==================== 6 SYMMETRIC ITEMS ====================
+      {
+        id: 'plane',
+        name: '俯視飛機',
+        isSymmetric: true,
+        axis: 'vertical',
+        vFoldResult: '✅ 左右對折 180° 完全重合！左機翼與右機翼對稱！',
+        hFoldResult: '❌ 上下對折無法重合！上方是機頭，下方是尾翼。',
+        teacherNote: '從正上方俯視飛機時，沿著機頭到機尾的正中央垂直線對折，左右兩邊機翼完全重合（1 條垂直對稱軸）。',
+        svg: `
+          <svg viewBox="0 0 160 110" class="w-full h-full">
+            <!-- Left & Right Wing Engines -->
+            <rect x="46" y="36" width="10" height="16" rx="3" fill="#64748B" stroke="#0F172A" stroke-width="2.5"/>
+            <rect x="104" y="36" width="10" height="16" rx="3" fill="#64748B" stroke="#0F172A" stroke-width="2.5"/>
+            <!-- Main Blue Wings -->
+            <polygon points="80,34 16,56 16,66 80,52 144,66 144,56" fill="#4F8DFD" stroke="#0F172A" stroke-width="3" stroke-linejoin="round"/>
+            <!-- Rear Tail Wings -->
+            <polygon points="80,78 52,92 52,99 80,90 108,99 108,92" fill="#4F8DFD" stroke="#0F172A" stroke-width="3" stroke-linejoin="round"/>
+            <!-- White Fuselage Body -->
+            <path d="M 80 10 C 89 10 91 26 91 50 L 89 88 C 89 97 80 103 80 103 C 80 103 71 97 71 88 L 69 50 C 69 26 71 10 80 10 Z" fill="#F8FAFC" stroke="#0F172A" stroke-width="3"/>
+            <!-- Cockpit Window -->
+            <path d="M 74 25 Q 80 19 86 25" fill="none" stroke="#0F172A" stroke-width="3" stroke-linecap="round"/>
+            <!-- Tail Fin Top Line -->
+            <line x1="80" y1="78" x2="80" y2="96" stroke="#0F172A" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+        `
+      },
+      {
+        id: 'sunglasses',
+        name: '正面太陽眼鏡',
+        isSymmetric: true,
+        axis: 'vertical',
+        vFoldResult: '✅ 左右對折 180° 完全重合！左右鏡框與鏡片大小形狀完全相同！',
+        hFoldResult: '❌ 上下對折無法重合！鼻樑位置偏上，上下弧度不同。',
+        teacherNote: '正面平放的太陽眼鏡，沿著鼻樑正中間垂直切開，左邊鏡片和右邊鏡片對折後完全重合（1 條垂直對稱軸）。',
+        svg: `
+          <svg viewBox="0 0 160 110" class="w-full h-full">
+            <!-- Side End Pieces -->
+            <rect x="10" y="43" width="9" height="8" rx="2" fill="#F59E0B" stroke="#1E293B" stroke-width="2.5"/>
+            <rect x="141" y="43" width="9" height="8" rx="2" fill="#F59E0B" stroke="#1E293B" stroke-width="2.5"/>
+            <!-- Center Nose Bridge -->
+            <path d="M 69 47 Q 80 39 91 47" fill="none" stroke="#D97706" stroke-width="4.5" stroke-linecap="round"/>
+            <!-- Left & Right Rounded Blue Lenses -->
+            <rect x="18" y="34" width="52" height="42" rx="14" fill="#22A6F5" stroke="#1E293B" stroke-width="3.5"/>
+            <rect x="90" y="34" width="52" height="42" rx="14" fill="#22A6F5" stroke="#1E293B" stroke-width="3.5"/>
+            <!-- Symmetrical White Lens Highlights -->
+            <line x1="32" y1="43" x2="54" y2="43" stroke="#BAE6FD" stroke-width="4" stroke-linecap="round"/>
+            <line x1="106" y1="43" x2="128" y2="43" stroke="#BAE6FD" stroke-width="4" stroke-linecap="round"/>
+          </svg>
+        `
+      },
+      {
+        id: 'h_leaf',
+        name: '橫放的完整樹葉',
+        isSymmetric: true,
+        axis: 'horizontal',
+        vFoldResult: '❌ 左右對折無法重合！左邊是尖尖的葉尖，右邊是有葉柄的蒂頭。',
+        hFoldResult: '✅ 上下對折 180° 完全重合！沿著水平主葉脈對折，上下兩半完全重疊！',
+        teacherNote: '特別注意！這片完整樹葉是「橫放」的，它的主葉脈在水平正中央，所以具有 1 條「水平對稱軸」（上下對稱）。',
+        svg: `
+          <svg viewBox="0 0 160 110" class="w-full h-full">
+            <!-- Stem on the Right -->
+            <line x1="126" y1="55" x2="148" y2="55" stroke="#14532D" stroke-width="4.5" stroke-linecap="round"/>
+            <!-- Symmetrical Horizontal Green Leaf -->
+            <path d="M 16 55 Q 72 18 128 55 Q 72 92 16 55 Z" fill="#4ADE80" stroke="#14532D" stroke-width="3" stroke-linejoin="round"/>
+            <!-- Horizontal Center Vein -->
+            <line x1="20" y1="55" x2="126" y2="55" stroke="#BBF7D0" stroke-width="3" stroke-linecap="round"/>
+            <!-- Symmetrical Side Veins -->
+            <line x1="52" y1="55" x2="40" y2="42" stroke="#BBF7D0" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="52" y1="55" x2="40" y2="68" stroke="#BBF7D0" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="80" y1="55" x2="66" y2="37" stroke="#BBF7D0" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="80" y1="55" x2="66" y2="73" stroke="#BBF7D0" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="106" y1="55" x2="94" y2="42" stroke="#BBF7D0" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="106" y1="55" x2="94" y2="68" stroke="#BBF7D0" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+        `
+      },
+      {
+        id: 'double_happiness',
+        name: '雙喜',
+        isSymmetric: true,
+        axis: 'vertical',
+        vFoldResult: '✅ 左右對折 180° 完全重合！左邊的「喜」與右邊的「喜」左右完全對稱！',
+        hFoldResult: '❌ 上下對折無法重合！上方是「士」字頭，下方是「口」字底。',
+        teacherNote: '傳統剪紙常見的「雙喜（囍）」字，就是利用左右對折剪出來的經典軸對稱圖案（1 條垂直對稱軸）！',
+        svg: `
+          <svg viewBox="0 0 160 110" class="w-full h-full">
+            <g fill="#E11D48">
+              <!-- Top Horizontal Bar across both -->
+              <rect x="26" y="16" width="108" height="7" rx="1"/>
+              <!-- Left & Right Vertical Pillars Top -->
+              <rect x="49" y="9" width="8" height="24" rx="1"/>
+              <rect x="103" y="9" width="8" height="24" rx="1"/>
+              <!-- Second Horizontal Bar -->
+              <rect x="32" y="27" width="42" height="6" rx="1"/>
+              <rect x="86" y="27" width="42" height="6" rx="1"/>
+              <!-- Upper Mouth Boxes (口) -->
+              <path d="M 34 37 H 72 V 55 H 34 Z M 42 43 V 49 H 64 V 43 Z"/>
+              <path d="M 88 37 H 126 V 55 H 88 Z M 96 43 V 49 H 118 V 43 Z"/>
+              <!-- Middle Shared Connector Bar -->
+              <rect x="24" y="60" width="112" height="7" rx="1"/>
+              <!-- Vertical Connectors -->
+              <rect x="38" y="55" width="7" height="18"/>
+              <rect x="61" y="55" width="7" height="18"/>
+              <rect x="92" y="55" width="7" height="18"/>
+              <rect x="115" y="55" width="7" height="18"/>
+              <rect x="28" y="70" width="104" height="6" rx="1"/>
+              <!-- Lower Mouth Boxes (口) -->
+              <path d="M 32 80 H 74 V 100 H 32 Z M 40 86 V 94 H 66 V 86 Z"/>
+              <path d="M 86 80 H 128 V 100 H 86 Z M 94 86 V 94 H 120 V 86 Z"/>
+            </g>
+          </svg>
+        `
+      },
+      {
+        id: 'five_leaf',
+        name: '五裂樹葉',
+        isSymmetric: true,
+        axis: 'vertical',
+        vFoldResult: '✅ 左右對折 180° 完全重合！左邊兩片葉裂與右邊兩片葉裂完全對稱！',
+        hFoldResult: '❌ 上下對折無法重合！上方是五個尖葉裂，下方是葉柄。',
+        teacherNote: '這片直立的五裂樹葉，正中央的葉片垂直向上，左右兩側各有兩片大小、角度完全對稱的側葉（1 條垂直對稱軸）。',
+        svg: `
+          <svg viewBox="0 0 160 110" class="w-full h-full">
+            <!-- Vertical Stem -->
+            <line x1="80" y1="78" x2="80" y2="103" stroke="#3F6212" stroke-width="4" stroke-linecap="round"/>
+            <!-- 5 Symmetrical Lobes -->
+            <path d="M 80 82
+                     C 62 84, 34 80, 22 66 C 36 58, 56 64, 68 72
+                     C 50 56, 34 36, 38 20 C 52 28, 66 48, 74 64
+                     C 70 42, 72 18, 80 8 C 88 18, 90 42, 86 64
+                     C 94 48, 108 28, 122 20 C 126 36, 110 56, 92 72
+                     C 104 64, 124 58, 138 66 C 126 80, 98 84, 80 82 Z"
+                  fill="#84A93C" stroke="#365314" stroke-width="2.5" stroke-linejoin="round"/>
+            <!-- Symmetrical Main Veins -->
+            <line x1="80" y1="82" x2="80" y2="16" stroke="#365314" stroke-width="2" stroke-linecap="round"/>
+            <line x1="80" y1="76" x2="44" y2="28" stroke="#365314" stroke-width="2" stroke-linecap="round"/>
+            <line x1="80" y1="76" x2="116" y2="28" stroke="#365314" stroke-width="2" stroke-linecap="round"/>
+            <line x1="80" y1="80" x2="32" y2="66" stroke="#365314" stroke-width="2" stroke-linecap="round"/>
+            <line x1="80" y1="80" x2="128" y2="66" stroke="#365314" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        `
+      },
+      {
+        id: 'ladybug',
+        name: '瓢蟲',
+        isSymmetric: true,
+        axis: 'vertical',
+        vFoldResult: '✅ 左右對折 180° 完全重合！左右觸角、六隻腳和背上的黑點都完全對稱！',
+        hFoldResult: '❌ 上下對折無法重合！上方有黑色頭部與觸角，下方是圓弧尾部。',
+        teacherNote: '大自然中的甲蟲與瓢蟲大多具有「左右對稱」的身體結構！沿著背部中線對折，連黑點的位置都左右對應（1 條垂直對稱軸）。',
+        svg: `
+          <svg viewBox="0 0 160 110" class="w-full h-full">
+            <!-- 6 Symmetrical Legs -->
+            <g stroke="#1E293B" stroke-width="3" stroke-linecap="round">
+              <line x1="52" y1="46" x2="34" y2="38"/><line x1="108" y1="46" x2="126" y2="38"/>
+              <line x1="48" y1="64" x2="30" y2="64"/><line x1="112" y1="64" x2="130" y2="64"/>
+              <line x1="52" y1="82" x2="36" y2="90"/><line x1="108" y1="82" x2="124" y2="90"/>
+            </g>
+            <!-- Symmetrical Antennae -->
+            <path d="M 73 22 Q 66 10 58 14" fill="none" stroke="#1E293B" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M 87 22 Q 94 10 102 14" fill="none" stroke="#1E293B" stroke-width="2.5" stroke-linecap="round"/>
+            <!-- Head -->
+            <ellipse cx="80" cy="28" rx="16" ry="11" fill="#1E293B"/>
+            <!-- Eyes -->
+            <circle cx="73" cy="24" r="3" fill="#FFFFFF"/>
+            <circle cx="87" cy="24" r="3" fill="#FFFFFF"/>
+            <!-- Red Spotted Shell -->
+            <circle cx="80" cy="62" r="34" fill="#EA580C" stroke="#1E293B" stroke-width="3"/>
+            <!-- Center Wing Split Line -->
+            <line x1="80" y1="28" x2="80" y2="96" stroke="#1E293B" stroke-width="2.5"/>
+            <!-- Symmetrical Black Spots -->
+            <circle cx="64" cy="46" r="5" fill="#1E293B"/><circle cx="96" cy="46" r="5" fill="#1E293B"/>
+            <circle cx="58" cy="64" r="5.5" fill="#1E293B"/><circle cx="102" cy="64" r="5.5" fill="#1E293B"/>
+            <circle cx="66" cy="82" r="4.5" fill="#1E293B"/><circle cx="94" cy="82" r="4.5" fill="#1E293B"/>
+          </svg>
+        `
+      },
+
+      // ==================== 4 ASYMMETRIC ITEMS (TRAPS) ====================
+      {
+        id: 'road_sign',
+        name: '路牌標示',
+        isSymmetric: false,
+        axis: 'none',
+        vFoldResult: '❌ 左右對折無法重合！白色箭頭彎向左上角，折過去不會重疊！',
+        hFoldResult: '❌ 上下對折無法重合！上方是水平左轉箭頭，下方是直線箭柄。',
+        teacherNote: '【圖案陷阱】雖然藍色圓形外框是對稱的，但裡面的「左轉箭頭」彎向一邊，無論直劈或橫切都無法完全重合！',
+        svg: `
+          <svg viewBox="0 0 160 110" class="w-full h-full">
+            <!-- Outer Blue Circle Sign -->
+            <circle cx="80" cy="55" r="42" fill="#0B5394" stroke="#1E293B" stroke-width="2.5"/>
+            <circle cx="80" cy="55" r="37" fill="none" stroke="#FFFFFF" stroke-width="2.5"/>
+            <!-- White Left-Turn Arrow -->
+            <path d="M 88 80 L 88 52 Q 88 42 78 42 L 64 42" fill="none" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+            <polygon points="68,29 50,42 68,55" fill="#FFFFFF"/>
+          </svg>
+        `
+      },
+      {
+        id: 'music_note',
+        name: '音符',
+        isSymmetric: false,
+        axis: 'none',
+        vFoldResult: '❌ 左右對折無法重合！上方雙符尾向右上方傾斜，下方兩個音符頭也一低一高！',
+        hFoldResult: '❌ 上下對折無法重合！上方是傾斜的雙橫槓，下方是兩個橢圓形音符頭。',
+        teacherNote: '音符的符桿頂部連著向上傾斜的雙符尾，且兩個橢圓形符頭都在符桿左側、一高一低，無論沿垂直軸（左右對折）或水平軸（上下對折）都無法完全重合，屬於非軸對稱圖形！',
+        svg: `
+          <svg viewBox="0 0 160 110" class="w-full h-full">
+            <!-- Left & Right Vertical Stems -->
+            <rect x="59" y="31" width="6.5" height="53" fill="#0F172A"/>
+            <rect x="103" y="13" width="6.5" height="58" fill="#0F172A"/>
+            <!-- Top Slanted Double Beams (matching uploaded sixteenth-note image) -->
+            <polygon points="59,29 109.5,11 109.5,19.5 59,37.5" fill="#0F172A"/>
+            <polygon points="59,43.5 109.5,25.5 109.5,34 59,52" fill="#0F172A"/>
+            <!-- Left & Right Tilted Oval Note Heads -->
+            <ellipse cx="49" cy="84" rx="14.5" ry="10.5" transform="rotate(-20 49 84)" fill="#0F172A"/>
+            <ellipse cx="93" cy="71" rx="14.5" ry="10.5" transform="rotate(-20 93 71)" fill="#0F172A"/>
+          </svg>
+        `
+      },
+      {
+        id: 'apple_logo',
+        name: '黑色蘋果標誌',
+        isSymmetric: false,
+        axis: 'none',
+        vFoldResult: '❌ 左右對折無法重合！右邊被咬掉了一口，而且頂部葉子歪向一邊！',
+        hFoldResult: '❌ 上下對折無法重合！頂部有葉子，底部是蘋果凹槽。',
+        teacherNote: '【缺口陷阱】這個黑色蘋果標誌的右邊少了一塊（被咬了一口），而且頂部的葉子是斜向一邊的，所以不是軸對稱圖形！',
+        svg: `
+          <svg viewBox="0 0 160 110" class="w-full h-full">
+            <!-- Tilted Top Leaf -->
+            <path d="M 80 28 C 80 16 92 10 100 10 C 100 22 90 28 80 28 Z" fill="#0F172A"/>
+            <!-- Apple Silhouette with Right Bite -->
+            <path d="M 80 34
+                     C 70 34 62 29 54 31
+                     C 40 34 32 50 36 68
+                     C 40 84 50 96 60 96
+                     C 66 96 72 92 80 92
+                     C 88 92 94 96 100 96
+                     C 108 96 116 86 120 74
+                     C 106 68 106 48 120 42
+                     C 114 33 106 30 98 31
+                     C 90 32 86 34 80 34 Z" fill="#0F172A"/>
+          </svg>
+        `
+      },
+      {
+        id: 'mug',
+        name: '馬克杯',
+        isSymmetric: false,
+        axis: 'none',
+        vFoldResult: '❌ 左右對折無法重合！只有右邊有杯耳（把手），左邊沒有把手！',
+        hFoldResult: '❌ 上下對折無法重合！上方是橢圓形杯口，下方是平底。',
+        teacherNote: '【把手陷阱】馬克杯的杯身雖然看起來對稱，但因為只有右邊多了一個「杯耳把手」，左右對折時把手沒有東西跟它重合！',
+        svg: `
+          <svg viewBox="0 0 160 110" class="w-full h-full">
+            <!-- Right Handle -->
+            <path d="M 102 36 H 116 C 126 36 126 76 116 76 H 102" fill="none" stroke="#93C5FD" stroke-width="9" stroke-linecap="round"/>
+            <path d="M 102 36 H 116 C 126 36 126 76 116 76 H 102" fill="none" stroke="#475569" stroke-width="2"/>
+            <!-- Light Blue Cylinder Mug Body -->
+            <path d="M 44 26 V 82 C 44 91 104 91 104 82 V 26 Z" fill="#BAE6FD" stroke="#475569" stroke-width="2.5"/>
+            <!-- Mug Top Rim Ellipse -->
+            <ellipse cx="74" cy="26" rx="30" ry="7" fill="#E0F2FE" stroke="#475569" stroke-width="2.5"/>
+          </svg>
+        `
+      }
+    ];
+
+    // ==================== STATE VARIABLES ====================
+    // placements map: { itemId: 'sym' | 'asym' }
+    let placements = {};
+    // Shuffled order of item IDs for the waiting tray and sorted order tracking
+    let trayOrder = [];
+    let symPlacedOrder = [];
+    let asymPlacedOrder = [];
+    let selectedCardId = null;
+    let isSubmitted = false;
+    let showSymmetryAxes = false;
+    let currentModalItem = null;
+    let currentFoldAxis = 'vertical';
+    let modalNoteRevealed = false;
+
+    // Fisher-Yates Shuffle to thoroughly mix symmetric and asymmetric items
+    function shuffleExhibitedOrder() {
+      const ids = EXHIBITS.map(item => item.id);
+      for (let i = ids.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [ids[i], ids[j]] = [ids[j], ids[i]];
+      }
+      trayOrder = ids;
+    }
+
+    // Web Audio API Sound Effects
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function playSound(effect) {
+      try {
+        if (!audioCtx) audioCtx = new AudioContextClass();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const now = audioCtx.currentTime;
+
+        if (effect === 'success') {
+          [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + i * 0.06);
+            gain.gain.setValueAtTime(0.16, now + i * 0.06);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.06 + 0.22);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now + i * 0.06);
+            osc.stop(now + i * 0.06 + 0.24);
+          });
+        } else if (effect === 'error') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(180, now);
+          osc.frequency.linearRampToValueAtTime(135, now + 0.25);
+          gain.gain.setValueAtTime(0.14, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.3);
+        } else if (effect === 'click') {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(480, now);
+          osc.frequency.exponentialRampToValueAtTime(720, now + 0.08);
+          gain.gain.setValueAtTime(0.1, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.1);
+        }
+      } catch (e) {}
+    }
+
+    // ==================== RENDER FUNCTIONS ====================
+    function renderBoard() {
+      const symItems = symPlacedOrder
+        .filter(id => placements[id] === 'sym')
+        .map(id => EXHIBITS.find(x => x.id === id));
+
+      const asymItems = asymPlacedOrder
+        .filter(id => placements[id] === 'asym')
+        .map(id => EXHIBITS.find(x => x.id === id));
+
+      const waitingItems = trayOrder
+        .filter(id => !placements[id])
+        .map(id => EXHIBITS.find(x => x.id === id));
+
+      const placedCount = symItems.length + asymItems.length;
+
+      // Update Counters WITHOUT revealing target denominators (/ 6 or / 4)
+      document.getElementById('counter-sym').textContent = `已放入：${symItems.length} 件`;
+      document.getElementById('counter-asym').textContent = `已放入：${asymItems.length} 件`;
+      document.getElementById('tray-count-text').textContent = `待分類生活展品區 (共 ${waitingItems.length} 件)`;
+
+      // Update Top Scoreboard & Action Buttons based on submission state
+      const scoreBox = document.getElementById('live-score-box');
+      const scoreTitle = document.getElementById('score-title-label');
+      const scoreNumEl = document.getElementById('live-score-num');
+      const submitBtn = document.getElementById('btn-submit-check');
+      const submitLabel = document.getElementById('btn-submit-label');
+      const retryBtn = document.getElementById('btn-retry-wrong');
+
+      if (!isSubmitted) {
+        scoreBox.className = 'bg-white border-2 border-amber-400 rounded-xl px-3 py-1 flex items-center gap-1.5 shadow-sm transition-all';
+        scoreTitle.textContent = '得分：';
+        scoreNumEl.className = 'text-sm sm:text-base font-black text-amber-600';
+        scoreNumEl.textContent = `待批改 (已放 ${placedCount}/10)`;
+
+        submitLabel.textContent = placedCount === 10 ? '呈交並核對答案 (已完成10件)' : `呈交並核對答案 (${placedCount}/10)`;
+        if (placedCount === 10) {
+          submitBtn.classList.add('pulse-submit-btn');
+        } else {
+          submitBtn.classList.remove('pulse-submit-btn');
+        }
+        retryBtn.classList.add('hidden');
+        retryBtn.classList.remove('flex');
+      } else {
+        const { score, wrongCount } = calculateGradingStats();
+        scoreTitle.textContent = '最終得分：';
+        scoreNumEl.textContent = `${score}`;
+
+        if (score === 100) {
+          scoreBox.className = 'bg-emerald-50 border-2 border-emerald-500 rounded-xl px-3 py-1 flex items-center gap-1.5 shadow-sm transition-all';
+          scoreNumEl.className = 'text-base sm:text-xl font-black text-emerald-600';
+        } else {
+          scoreBox.className = 'bg-rose-50 border-2 border-rose-400 rounded-xl px-3 py-1 flex items-center gap-1.5 shadow-sm transition-all';
+          scoreNumEl.className = 'text-base sm:text-xl font-black text-rose-600';
+        }
+
+        submitBtn.classList.remove('pulse-submit-btn');
+        submitLabel.textContent = '重新核對答案';
+
+        if (wrongCount > 0 || placedCount < 10) {
+          retryBtn.classList.remove('hidden');
+          retryBtn.classList.add('flex');
+        } else {
+          retryBtn.classList.add('hidden');
+          retryBtn.classList.remove('flex');
+        }
+      }
+
+      // Render Left Cabinet (Dynamic grid capacity so all cards fit even if student puts >6 cards inside)
+      const symGrid = document.getElementById('grid-sym');
+      const symCols = symItems.length > 6 ? 'grid-cols-4' : 'grid-cols-3';
+      if (symItems.length === 0) {
+        symGrid.className = 'flex-1 p-2.5 grid grid-cols-3 grid-rows-2 gap-2.5 min-h-0 relative';
+        symGrid.innerHTML = `
+          <div class="col-span-3 row-span-2 border-2 border-dashed border-emerald-300/80 bg-white/50 rounded-2xl flex flex-col items-center justify-center text-emerald-700/60 p-4 text-center">
+            <i class="fa-solid fa-box-archive text-2xl mb-1.5"></i>
+            <span class="font-black text-xs md:text-sm">請將你認為是「軸對稱圖形」的展品放入此展櫃</span>
+            <span class="text-[11px] font-bold mt-0.5">（呈交前可隨時移動或更換展櫃，呈交後每題答對 +10 分）</span>
+          </div>
+        `;
+      } else {
+        symGrid.className = `flex-1 p-2.5 grid ${symCols} auto-rows-fr gap-2.5 min-h-0 relative`;
+        symGrid.innerHTML = symItems.map(item => renderCardHTML(item, true)).join('');
+      }
+
+      // Render Right Cabinet
+      const asymGrid = document.getElementById('grid-asym');
+      const asymCols = asymItems.length > 6 ? 'grid-cols-4' : 'grid-cols-3';
+      if (asymItems.length === 0) {
+        asymGrid.className = 'flex-1 p-2.5 grid grid-cols-3 grid-rows-2 gap-2.5 min-h-0 relative';
+        asymGrid.innerHTML = `
+          <div class="col-span-3 row-span-2 border-2 border-dashed border-rose-300/80 bg-white/50 rounded-2xl flex flex-col items-center justify-center text-rose-700/60 p-4 text-center">
+            <i class="fa-solid fa-ban text-2xl mb-1.5"></i>
+            <span class="font-black text-xs md:text-sm">請將你認為是「非軸對稱圖形」的展品放入此剔除區</span>
+            <span class="text-[11px] font-bold mt-0.5">（呈交前可隨時移動或更換展櫃，呈交後每題答對 +10 分）</span>
+          </div>
+        `;
+      } else {
+        asymGrid.className = `flex-1 p-2.5 grid ${asymCols} auto-rows-fr gap-2.5 min-h-0 relative`;
+        asymGrid.innerHTML = asymItems.map(item => renderCardHTML(item, true)).join('');
+      }
+
+      // Render Bottom Waiting Tray
+      const trayGrid = document.getElementById('waiting-tray-grid');
+      if (waitingItems.length === 0) {
+        if (!isSubmitted) {
+          trayGrid.innerHTML = `
+            <div class="col-span-full flex items-center justify-between gap-3 text-blue-900 font-black text-xs sm:text-sm md:text-base bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50 border-2 border-blue-400 rounded-2xl px-5 py-3 shadow-sm">
+              <div class="flex items-center gap-3">
+                <span class="text-2xl">📝</span>
+                <span>10 件生活展品都已經放入展櫃了！如需修改可直接點選或拖曳展櫃內的卡片；確認無誤後請按右方按鈕核對答案！</span>
+              </div>
+              <button onclick="submitAndGrade()" class="pulse-submit-btn bg-[#2563EB] hover:bg-[#1D4ED8] text-white font-black px-5 py-2.5 rounded-xl shadow-md transition shrink-0 flex items-center gap-2">
+                <i class="fa-solid fa-clipboard-check"></i>
+                <span>📝 呈交並核對答案</span>
+              </button>
+            </div>
+          `;
+        } else {
+          const { score, correctCount, wrongCount } = calculateGradingStats();
+          if (score === 100) {
+            trayGrid.innerHTML = `
+              <div class="col-span-full flex items-center justify-between gap-3 text-emerald-800 font-black text-xs sm:text-sm md:text-base bg-gradient-to-r from-emerald-50 via-amber-50 to-emerald-50 border-2 border-emerald-400 rounded-2xl px-5 py-3 shadow-sm">
+                <div class="flex items-center gap-3">
+                  <span class="text-2xl">🎉</span>
+                  <span>滿分過關！全部 10 件生活展品位置完全正確，總分 <strong class="text-emerald-600 text-lg">100 / 100 分</strong>！可點擊卡片右上角「🔍 對折」進行重溫！</span>
+                </div>
+                <button onclick="resetToWaitingTray()" class="bg-[#10B981] hover:bg-[#059669] text-white font-black px-4 py-2 rounded-xl shadow-md transition shrink-0">
+                  🔄 下一位挑戰 (隨機洗牌)
+                </button>
+              </div>
+            `;
+          } else {
+            trayGrid.innerHTML = `
+              <div class="col-span-full flex flex-wrap items-center justify-between gap-3 text-rose-900 font-black text-xs sm:text-sm md:text-base bg-gradient-to-r from-rose-50 via-amber-50 to-rose-50 border-2 border-rose-400 rounded-2xl px-5 py-2.5 shadow-sm">
+                <div class="flex items-center gap-3">
+                  <span class="text-2xl">🧐</span>
+                  <span>批改完成！答對 <strong class="text-emerald-600">${correctCount} 件</strong>，放錯位置 <strong class="text-rose-600">${wrongCount} 件</strong>，最終得分：<strong class="text-rose-600 text-lg">${score} / 100 分</strong>！（上方紅框卡片即為放錯位置的展品）</span>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                  <button onclick="retryWrongCards()" class="bg-[#F59E0B] hover:bg-[#D97706] text-white font-black px-3.5 py-2 rounded-xl shadow-sm transition flex items-center gap-1.5 text-xs sm:text-sm">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <span>✏️ 訂正放錯的展品 (${wrongCount}件)</span>
+                  </button>
+                  <button onclick="autoCompleteAll()" class="bg-[#10B981] hover:bg-[#059669] text-white font-black px-3.5 py-2 rounded-xl shadow-sm transition flex items-center gap-1.5 text-xs sm:text-sm">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>✨ 移至正確展櫃</span>
+                  </button>
+                </div>
+              </div>
+            `;
+          }
+        }
+      } else {
+        trayGrid.innerHTML = waitingItems.map(item => renderCardHTML(item, false)).join('');
+      }
+    }
+
+    function calculateGradingStats() {
+      let correctCount = 0;
+      let wrongCount = 0;
+      let unplacedCount = 0;
+
+      EXHIBITS.forEach(item => {
+        const placedIn = placements[item.id];
+        if (!placedIn) {
+          unplacedCount++;
+        } else {
+          const expected = item.isSymmetric ? 'sym' : 'asym';
+          if (placedIn === expected) {
+            correctCount++;
+          } else {
+            wrongCount++;
+          }
+        }
+      });
+
+      return {
+        correctCount,
+        wrongCount,
+        unplacedCount,
+        score: correctCount * 10
+      };
+    }
+
+    function renderCardHTML(item, isPlacedInCabinet) {
+      const isSelected = selectedCardId === item.id;
+      let axisLineHTML = '';
+
+      if (showSymmetryAxes && item.isSymmetric) {
+        axisLineHTML = item.axis === 'vertical'
+          ? `<div class="axis-v-line"></div>`
+          : `<div class="axis-h-line"></div>`;
+      }
+
+      let statusClasses = '';
+      let scoreBadgeHTML = '';
+
+      if (isPlacedInCabinet && isSubmitted) {
+        const expected = item.isSymmetric ? 'sym' : 'asym';
+        const isCorrect = placements[item.id] === expected;
+        if (isCorrect) {
+          statusClasses = 'graded-correct pop-anim';
+          scoreBadgeHTML = `<div class="score-badge-pill bg-emerald-500 text-white"><i class="fa-solid fa-check"></i>+10分</div>`;
+        } else {
+          statusClasses = 'graded-wrong shake-anim';
+          scoreBadgeHTML = `<div class="score-badge-pill bg-rose-600 text-white"><i class="fa-solid fa-xmark"></i>放錯位置 (0分)</div>`;
+        }
+      } else if (isPlacedInCabinet) {
+        statusClasses = 'pop-anim';
+      }
+
+      return `
+        <div id="card-${item.id}"
+             draggable="true"
+             ondragstart="handleCardDragStart(event, '${item.id}')"
+             onclick="handleCardTap(event, '${item.id}')"
+             class="item-card ${isSelected ? 'selected' : ''} ${statusClasses} h-full min-h-0">
+          ${scoreBadgeHTML}
+          <!-- Top Right Fold Verification Pill -->
+          <div class="flex justify-end z-20">
+            <button onclick="openFoldModal(event, '${item.id}')" class="fold-pill" title="打開 3D 對折驗證">
+              <i class="fa-solid fa-magnifying-glass text-[10px]"></i>
+              <span>對折</span>
+            </button>
+          </div>
+
+          <!-- Center SVG Illustration -->
+          <div class="relative flex-1 flex items-center justify-center min-h-0 my-0.5 px-1 overflow-hidden">
+            ${axisLineHTML}
+            <div class="w-full h-full max-h-[82px] flex items-center justify-center pointer-events-none">
+              ${item.svg}
+            </div>
+          </div>
+
+          <!-- Bottom Rounded Grey Pill Label -->
+          <div class="card-label-pill">
+            ${item.name}
+          </div>
+        </div>
+      `;
+    }
+
+    // ==================== INTERACTION: FREE PLACEMENT BEFORE SUBMISSION ====================
+    function handleCardTap(event, itemId) {
+      event.stopPropagation();
+      const item = EXHIBITS.find(x => x.id === itemId);
+      if (!item) return;
+
+      // If already submitted and student clicks a card, let them either select it to move or inspect fold
+      playSound('click');
+
+      if (selectedCardId === itemId) {
+        selectedCardId = null;
+        updateBanner('🦉', '已取消選取卡片。請點選展品卡再點上方展櫃，或直接拖曳卡片進行分類！');
+      } else {
+        selectedCardId = itemId;
+        const currentZone = placements[itemId];
+        if (!currentZone) {
+          updateBanner('👆', `已點選【${item.name}】！請點擊上方的「軸對稱圖形展櫃」或「非軸對稱圖形（剔除區）」放入！`);
+        } else {
+          updateBanner('🔄', `已點選展櫃內的【${item.name}】！你可以點擊另一個展櫃更換位置，或點擊下方待分類區退回卡片。`);
+        }
+      }
+      renderBoard();
+    }
+
+    function handleCabinetTap(targetCabinet) {
+      if (!selectedCardId) return;
+      placeItemIntoCabinet(selectedCardId, targetCabinet);
+    }
+
+    function handleTrayTap() {
+      if (!selectedCardId) return;
+      returnItemToTray(selectedCardId);
+    }
+
+    function handleCardDragStart(event, itemId) {
+      selectedCardId = itemId;
+      event.dataTransfer.setData('text/plain', itemId);
+    }
+
+    function handleCabinetDragOver(event, targetCabinet) {
+      event.preventDefault();
+      const el = document.getElementById(`cabinet-${targetCabinet}`);
+      if (el && !el.classList.contains('drag-over')) el.classList.add('drag-over');
+    }
+
+    function handleCabinetDragLeave(event, targetCabinet) {
+      const el = document.getElementById(`cabinet-${targetCabinet}`);
+      if (el) el.classList.remove('drag-over');
+    }
+
+    function handleCabinetDrop(event, targetCabinet) {
+      event.preventDefault();
+      const el = document.getElementById(`cabinet-${targetCabinet}`);
+      if (el) el.classList.remove('drag-over');
+
+      const itemId = event.dataTransfer.getData('text/plain') || selectedCardId;
+      if (itemId) placeItemIntoCabinet(itemId, targetCabinet);
+    }
+
+    function handleTrayDragOver(event) {
+      event.preventDefault();
+    }
+
+    function handleTrayDrop(event) {
+      event.preventDefault();
+      const itemId = event.dataTransfer.getData('text/plain') || selectedCardId;
+      if (itemId) returnItemToTray(itemId);
+    }
+
+    // Allows placing ANY card into ANY cabinet without immediate right/wrong rejection
+    function placeItemIntoCabinet(itemId, targetCabinet) {
+      const item = EXHIBITS.find(x => x.id === itemId);
+      if (!item) return;
+
+      // If student moves a card after submitting, switch back to unsubmitted editing mode so they can re-submit
+      if (isSubmitted) {
+        isSubmitted = false;
+      }
+
+      playSound('click');
+
+      // Remove from previous cabinet order lists if moving between cabinets
+      symPlacedOrder = symPlacedOrder.filter(id => id !== itemId);
+      asymPlacedOrder = asymPlacedOrder.filter(id => id !== itemId);
+
+      placements[itemId] = targetCabinet;
+      if (targetCabinet === 'sym') {
+        symPlacedOrder.push(itemId);
+      } else {
+        asymPlacedOrder.push(itemId);
+      }
+
+      selectedCardId = null;
+      const placedCount = Object.keys(placements).length;
+      const cabinetName = targetCabinet === 'sym' ? '軸對稱圖形展櫃' : '非軸對稱圖形（剔除區）';
+
+      if (placedCount === 10) {
+        updateBanner('📝', `已將【${item.name}】放入「${cabinetName}」！全部 10 件展品已放好，請點擊右上角「📝 呈交並核對答案」查看得分與對錯！`);
+      } else {
+        updateBanner('📦', `已將【${item.name}】放入「${cabinetName}」（目前已放置 ${placedCount} / 10 件）。完成後記得按「📝 呈交並核對答案」！`);
+      }
+      renderBoard();
+    }
+
+    function returnItemToTray(itemId) {
+      const item = EXHIBITS.find(x => x.id === itemId);
+      if (!item || !placements[itemId]) {
+        selectedCardId = null;
+        renderBoard();
+        return;
+      }
+
+      if (isSubmitted) {
+        isSubmitted = false;
+      }
+
+      playSound('click');
+      delete placements[itemId];
+      symPlacedOrder = symPlacedOrder.filter(id => id !== itemId);
+      asymPlacedOrder = asymPlacedOrder.filter(id => id !== itemId);
+      selectedCardId = null;
+
+      updateBanner('↩️', `已將【${item.name}】退回下方待分類區！`);
+      renderBoard();
+    }
+
+    // ==================== FINAL SUBMISSION & GRADING LOGIC ====================
+    function submitAndGrade() {
+      const placedCount = Object.keys(placements).length;
+      if (placedCount === 0) {
+        playSound('error');
+        updateBanner('⚠️', '你還沒有放入任何展品喔！請先將下方的生活展品拖曳或點選放入上方展櫃，再按「📝 呈交並核對答案」！');
+        return;
+      }
+
+      isSubmitted = true;
+      selectedCardId = null;
+      const { score, correctCount, wrongCount, unplacedCount } = calculateGradingStats();
+
+      if (score === 100) {
+        playSound('success');
+        updateBanner('🏆', `滿分 100 分！太厲害了，全部 10 件生活展品都放在正確的展櫃（答對 10 題，放錯 0 題）！`);
+      } else {
+        playSound('error');
+        const unplacedMsg = unplacedCount > 0 ? `，未放置 ${unplacedCount} 題` : '';
+        updateBanner(
+          '📊',
+          `批改完成！最終得分：<strong class="text-rose-600 text-base">${score} / 100 分</strong>（答對 <strong class="text-emerald-700">${correctCount} 題</strong>，放錯位置 <strong class="text-rose-600">${wrongCount} 題</strong>${unplacedMsg}）。紅框標示的展品放錯位置了，點一下「🔍 對折」看看原因吧！`
+        );
+      }
+
+      renderBoard();
+    }
+
+    // Returns ONLY the misplaced cards back to the bottom tray so the student can fix them and re-submit
+    function retryWrongCards() {
+      playSound('click');
+      let returnedNames = [];
+
+      EXHIBITS.forEach(item => {
+        const placedIn = placements[item.id];
+        if (placedIn) {
+          const expected = item.isSymmetric ? 'sym' : 'asym';
+          if (placedIn !== expected) {
+            delete placements[item.id];
+            symPlacedOrder = symPlacedOrder.filter(id => id !== item.id);
+            asymPlacedOrder = asymPlacedOrder.filter(id => id !== item.id);
+            returnedNames.push(item.name);
+          }
+        }
+      });
+
+      isSubmitted = false;
+      selectedCardId = null;
+
+      if (returnedNames.length > 0) {
+        updateBanner('✏️', `已將放錯位置的 ${returnedNames.length} 件展品（${returnedNames.join('、')}）退回下方待分類區！請用「🔍 對折」驗證後重新放入正確展櫃並再次呈交！`);
+      } else {
+        updateBanner('✏️', '請將下方尚未分類的展品放入展櫃後，再按「📝 呈交並核對答案」！');
+      }
+
+      renderBoard();
+    }
+
+    function updateBanner(emoji, htmlText) {
+      document.getElementById('banner-avatar').textContent = emoji;
+      document.getElementById('banner-message').innerHTML = htmlText;
+    }
+
+    // ==================== TEACHER TOOLBAR ACTIONS ====================
+    function toggleSymmetryLines() {
+      playSound('click');
+      showSymmetryAxes = !showSymmetryAxes;
+      document.getElementById('axis-toggle-label').textContent = showSymmetryAxes ? '隱藏對稱軸' : '顯示對稱軸';
+      renderBoard();
+    }
+
+    function autoCompleteAll() {
+      playSound('success');
+      placements = {};
+      symPlacedOrder = [];
+      asymPlacedOrder = [];
+      EXHIBITS.forEach(item => {
+        if (item.isSymmetric) {
+          placements[item.id] = 'sym';
+          symPlacedOrder.push(item.id);
+        } else {
+          placements[item.id] = 'asym';
+          asymPlacedOrder.push(item.id);
+        }
+      });
+      isSubmitted = true;
+      selectedCardId = null;
+      updateBanner('🏆', '已為您將全部 10 件展品移至正確展櫃（100 / 100 分）！點擊任一卡片右上角的「🔍 對折」可進行 3D 對折驗證！');
+      renderBoard();
+    }
+
+    function resetToWaitingTray() {
+      playSound('click');
+      placements = {};
+      symPlacedOrder = [];
+      asymPlacedOrder = [];
+      selectedCardId = null;
+      isSubmitted = false;
+      shuffleExhibitedOrder();
+      updateBanner('🦉', '所有展品已隨機洗牌並放回下方「待分類生活展品區」！請自由分類後按「📝 呈交並核對答案」計分！');
+      renderBoard();
+    }
+
+    // ==================== 3D FOLDING VERIFICATION MODAL ====================
+    function openFoldModal(event, itemId) {
+      if (event) event.stopPropagation();
+      playSound('click');
+      const item = EXHIBITS.find(x => x.id === itemId);
+      if (!item) return;
+
+      currentModalItem = item;
+      currentFoldAxis = item.axis === 'horizontal' ? 'horizontal' : 'vertical';
+      modalNoteRevealed = isSubmitted; // Automatically show full teacher note after submission, hide by default before submission
+
+      document.getElementById('modal-title').textContent = item.name;
+      updateModalTeacherNoteUI();
+      resetFoldView();
+
+      const modal = document.getElementById('fold-modal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function updateModalTeacherNoteUI() {
+      if (!currentModalItem) return;
+      const noteEl = document.getElementById('modal-teacher-note');
+      const btnEl = document.getElementById('btn-toggle-note');
+      if (modalNoteRevealed) {
+        noteEl.textContent = currentModalItem.teacherNote;
+        btnEl.textContent = '隱藏解析';
+      } else {
+        noteEl.textContent = '（呈交前請先自己動手按「垂直軸(左右對折)」或「水平軸(上下對折)」觀察兩邊是否完全重合！如需看解答請按右上方「顯示解析」）';
+        btnEl.textContent = '顯示解析';
+      }
+    }
+
+    function toggleModalTeacherNote() {
+      modalNoteRevealed = !modalNoteRevealed;
+      updateModalTeacherNoteUI();
+    }
+
+    function closeFoldModal() {
+      playSound('click');
+      const modal = document.getElementById('fold-modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      currentModalItem = null;
+    }
+
+    function resetFoldView() {
+      if (!currentModalItem) return;
+      const slider = document.getElementById('fold-slider');
+      slider.value = 0;
+      document.getElementById('fold-angle-label').textContent = '對折角度：0°';
+
+      const stage = document.getElementById('fold-3d-stage');
+      stage.innerHTML = `
+        <div class="w-full h-full flex items-center justify-center p-2">
+          ${currentModalItem.svg}
+        </div>
+      `;
+
+      const resultBox = document.getElementById('modal-result-box');
+      resultBox.className = 'bg-amber-50 border-2 border-amber-200 rounded-2xl p-3.5';
+      document.getElementById('modal-result-title').textContent = '💡 點擊「垂直軸(左右對折)」或「水平軸(上下對折)」，或拉動滑桿測試對折！';
+      document.getElementById('modal-result-desc').innerHTML = '觀察看看沿著對稱軸對折 180° 之後，兩邊的圖案能不能<strong>完全重合</strong>？';
+    }
+
+    function setupFoldLayers(axisType, angleDeg) {
+      if (!currentModalItem) return;
+      currentFoldAxis = axisType;
+      const stage = document.getElementById('fold-3d-stage');
+
+      if (axisType === 'vertical') {
+        stage.innerHTML = `
+          <div class="fold-layer opacity-20 p-2 pointer-events-none">${currentModalItem.svg}</div>
+          <div class="fold-layer clip-left-half p-2">${currentModalItem.svg}</div>
+          <div id="moving-fold-half" class="fold-layer clip-right-half p-2" style="transform: rotateY(${-angleDeg}deg); opacity: 0.82;">
+            ${currentModalItem.svg}
+          </div>
+          <div class="axis-v-line"></div>
+        `;
+      } else if (axisType === 'horizontal') {
+        stage.innerHTML = `
+          <div class="fold-layer opacity-20 p-2 pointer-events-none">${currentModalItem.svg}</div>
+          <div class="fold-layer clip-top-half p-2">${currentModalItem.svg}</div>
+          <div id="moving-fold-half" class="fold-layer clip-bottom-half p-2" style="transform: rotateX(${angleDeg}deg); opacity: 0.82;">
+            ${currentModalItem.svg}
+          </div>
+          <div class="axis-h-line"></div>
+        `;
+      } else {
+        // 45° Diagonal fold simulation
+        stage.innerHTML = `
+          <div class="fold-layer opacity-20 p-2 pointer-events-none">${currentModalItem.svg}</div>
+          <div class="fold-layer p-2" style="clip-path: polygon(0 0, 100% 0, 0 100%);">${currentModalItem.svg}</div>
+          <div id="moving-fold-half" class="fold-layer p-2" style="clip-path: polygon(100% 0, 100% 100%, 0 100%); transform: rotate3d(1, -1, 0, ${angleDeg}deg); opacity: 0.82;">
+            ${currentModalItem.svg}
+          </div>
+          <div style="position:absolute; inset:0; pointer-events:none; z-index:15;">
+            <svg viewBox="0 0 100 100" class="w-full h-full"><line x1="10" y1="90" x2="90" y2="10" stroke="#8B5CF6" stroke-width="2" stroke-dasharray="4,3"/></svg>
+          </div>
+        `;
+      }
+    }
+
+    function stepFoldAngle(delta) {
+      const slider = document.getElementById('fold-slider');
+      const nextVal = Math.max(0, Math.min(180, Number(slider.value) + delta));
+      slider.value = nextVal;
+      handleSliderFold(nextVal);
+    }
+
+    function handleSliderFold(val) {
+      const angle = Number(val);
+      document.getElementById('fold-slider').value = angle;
+      document.getElementById('fold-angle-label').textContent = `對折角度：${angle}°`;
+      setupFoldLayers(currentFoldAxis, angle);
+      if (angle >= 165) {
+        updateModalVerificationStatus(currentFoldAxis);
+      }
+    }
+
+    function startAutoFold(axisType) {
+      if (!currentModalItem) return;
+      currentFoldAxis = axisType;
+      setupFoldLayers(axisType, 0);
+
+      const movingHalf = document.getElementById('moving-fold-half');
+      if (movingHalf) {
+        movingHalf.style.transition = 'transform 0.85s cubic-bezier(0.45, 0.05, 0.25, 1)';
+        setTimeout(() => {
+          if (axisType === 'vertical') {
+            movingHalf.style.transform = 'rotateY(-180deg)';
+          } else if (axisType === 'horizontal') {
+            movingHalf.style.transform = 'rotateX(180deg)';
+          } else {
+            movingHalf.style.transform = 'rotate3d(1, -1, 0, 180deg)';
+          }
+        }, 30);
+      }
+
+      document.getElementById('fold-slider').value = 180;
+      document.getElementById('fold-angle-label').textContent = '對折角度：180°';
+      updateModalVerificationStatus(axisType);
+    }
+
+    function updateModalVerificationStatus(axisType) {
+      if (!currentModalItem) return;
+      const isMatch = currentModalItem.isSymmetric && currentModalItem.axis === axisType;
+      const resultBox = document.getElementById('modal-result-box');
+      const titleEl = document.getElementById('modal-result-title');
+      const descEl = document.getElementById('modal-result-desc');
+
+      if (isMatch) {
+        playSound('success');
+        resultBox.className = 'bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-3.5';
+        titleEl.textContent = axisType === 'vertical' ? '🎉 垂直軸(左右對折)：完全重合！' : '🎉 水平軸(上下對折)：完全重合！';
+        descEl.textContent = axisType === 'vertical' ? currentModalItem.vFoldResult : currentModalItem.hFoldResult;
+      } else {
+        playSound('error');
+        resultBox.className = 'bg-rose-50 border-2 border-rose-300 rounded-2xl p-3.5';
+        if (axisType === 'diagonal') {
+          titleEl.textContent = '⚠️ 45° 斜線對折：無法重合！';
+          descEl.textContent = '❌ 沿著 45° 斜線對折時，兩邊方向與形狀交錯，無法完全重合！';
+        } else {
+          titleEl.textContent = axisType === 'vertical' ? '⚠️ 垂直軸(左右對折)：無法重合！' : '⚠️ 水平軸(上下對折)：無法重合！';
+          descEl.textContent = axisType === 'vertical' ? currentModalItem.vFoldResult : currentModalItem.hFoldResult;
+        }
+      }
+    }
+
+    function classifyFromModal(targetCabinet) {
+      if (!currentModalItem) return;
+      const itemId = currentModalItem.id;
+      closeFoldModal();
+      placeItemIntoCabinet(itemId, targetCabinet);
+    }
+
+    // Initialize with all 10 cards shuffled in the bottom waiting tray ready for classroom play
+    window.onload = function () {
+      shuffleExhibitedOrder();
+      renderBoard();
+    };
+  </script>
+</body>
+</html>
